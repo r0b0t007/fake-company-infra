@@ -39,6 +39,11 @@ bench set-config -g redis_cache redis://redis-cache:6379
 bench set-config -g redis_queue redis://redis-queue:6379
 bench set-config -g redis_socketio redis://redis-queue:6379
 bench set-config -g developer_mode 1
+# Chromium makes the PDFs (wkhtmltopdf is deprecated in v16). Without this path,
+# Frappe downloads its own copy of Chromium into the bench.
+if [ -x /usr/bin/chromium-headless-shell ]; then
+	bench set-config -g chromium_path /usr/bin/chromium-headless-shell
+fi
 
 if [ ! -d apps/erpnext ]; then
 	echo ">> get-app erpnext ($BRANCH)"
@@ -66,6 +71,8 @@ new_site() {
 			--admin-password "$ADMIN_PASSWORD" \
 			--mariadb-user-host-login-scope='%'
 		bench --site "$site" set-config developer_mode 1
+		bench --site "$site" execute frappe.db.set_single_value --args '["Print Settings", "pdf_generator", "chrome"]'
+		bench --site "$site" execute frappe.db.commit
 	fi
 	for app in "$@"; do
 		if installed "$app" && ! bench --site "$site" list-apps | grep -qx "$app.*"; then

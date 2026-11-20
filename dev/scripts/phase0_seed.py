@@ -294,6 +294,15 @@ def set_french():
 	checkpoint("interface language set to French")
 
 
+def use_chromium_pdf():
+	"""wkhtmltopdf is deprecated in v16 and removed in v17, so PDFs are made with Chromium."""
+	if frappe.db.get_single_value("Print Settings", "pdf_generator") != "chrome":
+		settings = frappe.get_single("Print Settings")
+		settings.pdf_generator = "chrome"
+		settings.save()
+	checkpoint("PDF generator set to Chromium")
+
+
 # --- Stage 2: CGNC chart and company defaults -----------------------------------------
 
 
@@ -885,6 +894,7 @@ def main():
 	try:
 		run_setup_wizard()
 		set_french()
+		use_chromium_pdf()
 		replace_chart()
 		configure()
 		import_shipment()

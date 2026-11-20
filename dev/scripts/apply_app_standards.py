@@ -11,8 +11,8 @@ from pathlib import Path
 
 GITHUB_OWNER = "r0b0t007"
 FRAPPE_BRANCH = "version-16"
-FRAPPE_RANGE = ">=16.50.0,<17.0.0"
-ERPNEXT_RANGE = ">=16.52.0,<17.0.0"
+FRAPPE_RANGE = ">=16.60.0,<17.0.0"
+ERPNEXT_RANGE = ">=16.60.0,<17.0.0"
 
 # required_apps per ADR 0001. Generic apps never list each other or the tenant app.
 APPS = {
@@ -42,14 +42,14 @@ def set_required_apps(app: str, requires: list[str]) -> None:
 	hooks = APPS_DIR / app / app / "hooks.py"
 	text = hooks.read_text(encoding="utf-8")
 	line = f"required_apps = {json.dumps(requires)}"
-	text = re.sub(r"^#? ?required_apps = .*$", line, text, count=1, flags=re.M)
+	text = re.sub(r"^#? ?required_apps = .*$", line, text, count=1, flags=re.MULTILINE)
 	write(hooks, text)
 
 
 def set_frappe_dependencies(app: str, requires: list[str]) -> None:
 	pyproject = APPS_DIR / app / "pyproject.toml"
 	text = pyproject.read_text(encoding="utf-8")
-	text = re.sub(r"\n\[tool\.bench\.frappe-dependencies\]\n(?:[^\[\n].*\n)*", "\n", text)
+	text = re.sub(r"\n\[tool\.bench\.frappe-dependencies\]\n(?:[^\[\n].*\n)*", "", text)
 	block = f'\n[tool.bench.frappe-dependencies]\nfrappe = "{FRAPPE_RANGE}"\n'
 	if "erpnext" in requires:
 		block += f'erpnext = "{ERPNEXT_RANGE}"\n'
@@ -62,7 +62,7 @@ def ci_workflow(app: str, requires: list[str]) -> str:
 	checkout_deps = "".join(
 		f"""
       - name: Checkout {dep}
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: {GITHUB_OWNER}/{dep}
           path: apps/{dep}
@@ -115,17 +115,17 @@ jobs:
 
     steps:
       - name: Checkout {app}
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           path: apps/{app}
 {checkout_deps}
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: '3.14'
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: 24
 
@@ -169,6 +169,10 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      # The build backend follows Frappe and ERPNext, which still pin flit_core <4.
+      - dependency-name: flit-core
+        update-types: ["version-update:semver-major"]
 """
 
 
