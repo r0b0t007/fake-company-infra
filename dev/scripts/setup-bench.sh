@@ -10,7 +10,7 @@ BRANCH=version-16
 ROOT=/home/frappe/benches
 BENCH=$ROOT/frappe-bench
 APPS_SRC=/workspace/apps
-GENERIC_APPS=(morocco_localization trade_import bangicode_brand)
+GENERIC_APPS=(morocco_localization trade_import fake_company_brand)
 TENANT_APP=marone_custom
 
 # Docker Desktop DNS needs a few seconds after the container starts.

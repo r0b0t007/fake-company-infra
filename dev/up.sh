@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # One command to get both dev sites from scratch (CHW-86).
-# Run from anywhere: bangicode-infra/dev/up.sh
+# Run from anywhere: fake-company-infra/dev/up.sh
 set -euo pipefail
 
 # Git Bash on Windows rewrites /workspace/... into C:/Program Files/Git/workspace/...

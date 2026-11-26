@@ -1,4 +1,4 @@
-"""Apply the Bangicode app standards (CHW-84, ADR 0001) to the apps in MaroneERP/apps.
+"""Apply the Fake Company app standards (CHW-84, ADR 0001) to the apps in MaroneERP/apps.
 
 Run on the host after `new-app.sh`:  python dev/scripts/apply_app_standards.py
 Safe to run again: every file is rewritten from the same template.
@@ -18,13 +18,13 @@ ERPNEXT_RANGE = ">=16.60.0,<17.0.0"
 APPS = {
 	"morocco_localization": {"requires": ["erpnext"], "kind": "generic"},
 	"trade_import": {"requires": ["erpnext"], "kind": "generic"},
-	"bangicode_brand": {"requires": [], "kind": "generic"},
+	"fake_company_brand": {"requires": [], "kind": "generic"},
 	"marone_custom": {
 		"requires": [
 			"erpnext",
 			"morocco_localization",
 			"trade_import",
-			"bangicode_brand",
+			"fake_company_brand",
 		],
 		"kind": "tenant",
 	},
@@ -205,13 +205,13 @@ def claude_md(app: str, cfg: dict) -> str:
 	rules = GENERIC_RULES if cfg["kind"] == "generic" else TENANT_RULES
 	return f"""# {app}
 
-{title}: a Frappe app for ERPNext {FRAPPE_BRANCH[-2:]} by Bangicode SARL. Part of the MaroneERP white-label build (Linear project MaroneERP, team CHW).
+{title}: a Frappe app for ERPNext {FRAPPE_BRANCH[-2:]} by Fake Company SARL. Part of the MaroneERP white-label build (Linear project MaroneERP, team CHW).
 
 - Requires: {requires} (`required_apps` in `hooks.py`).
-- Architecture: `bangicode-infra/docs/adr/0001-app-split.md`.
+- Architecture: `fake-company-infra/docs/adr/0001-app-split.md`.
 - Reference the Linear issue (`CHW-123`) in branch names, commits and PRs.
 
-## Commands (inside the dev container, `bangicode-infra/dev/`)
+## Commands (inside the dev container, `fake-company-infra/dev/`)
 
 ```bash
 bench --site marone.localhost run-tests --app {app}

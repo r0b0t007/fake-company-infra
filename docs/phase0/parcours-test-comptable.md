@@ -11,7 +11,7 @@ Document de séance pour la revue avec l'expert-comptable (CHW-77, CHW-78).
 - Adresse : `http://phase0-demo.localhost:8000` (poste de démonstration)
 - Utilisateur : `Administrator`, mot de passe `admin`
 - Société : **Démo Import SARL** (abréviation DI), devise MAD, exercice 2026
-- Script qui recrée tout le site : `bangicode-infra/dev/scripts/phase0_seed.py`
+- Script qui recrée tout le site : `fake-company-infra/dev/scripts/phase0_seed.py`
 
 ## Hypothèses
 
