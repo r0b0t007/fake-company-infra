@@ -4,6 +4,7 @@
 # 1. Create the bench (Frappe version-16) and get ERPNext version-16.
 # 2. Soft-link every app found in /workspace/apps into the bench.
 # 3. Create generic.localhost (generic apps only) and marone.localhost (all apps).
+# 4. Compile the French and Arabic translations (.po to .mo), so the desk shows them.
 set -euo pipefail
 
 BRANCH=version-16
@@ -85,6 +86,16 @@ new_site() {
 # generic.localhost proves the generic apps install without the tenant app (ADR 0001).
 new_site generic.localhost erpnext "${GENERIC_APPS[@]}"
 new_site marone.localhost erpnext "${GENERIC_APPS[@]}" "$TENANT_APP"
+
+# Frappe reads compiled .mo files, not the .po sources. Without this step the French
+# language setting still shows English. The output goes to sites/assets/locale and is shared
+# by every site, so one call per language covers both sites. --force: an earlier run can leave
+# an empty .mo file that looks "up to date" by date (seen for Arabic), and then that language
+# never loads.
+for locale in fr ar; do
+	echo ">> compile translations ($locale)"
+	bench --site generic.localhost compile-po-to-mo --locale "$locale" --force
+done
 
 # No default site: with one set, `bench serve` answers every Host with that site.
 # Always pass --site to bench commands.
