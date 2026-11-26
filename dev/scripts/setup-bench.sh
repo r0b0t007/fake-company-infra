@@ -87,14 +87,20 @@ new_site() {
 new_site generic.localhost erpnext "${GENERIC_APPS[@]}"
 new_site marone.localhost erpnext "${GENERIC_APPS[@]}" "$TENANT_APP"
 
-# Frappe reads compiled .mo files, not the .po sources. Without this step the French
-# language setting still shows English. The output goes to sites/assets/locale and is shared
-# by every site, so one call per language covers both sites. --force: an earlier run can leave
-# an empty .mo file that looks "up to date" by date (seen for Arabic), and then that language
-# never loads.
+# Frappe reads compiled .mo files, not the .po sources. Without them, a site set to French or
+# Arabic still shows English. The files go to sites/assets/locale and are shared by every site,
+# so one call per language covers both sites. An interrupted compile can leave an empty .mo
+# that looks up to date by its date (seen for Arabic) and is then never rebuilt: remove empty
+# ones first, so the normal compile rebuilds them and skips every file that is current.
+find sites/assets/locale -name '*.mo' -empty -delete 2>/dev/null || true
 for locale in fr ar; do
 	echo ">> compile translations ($locale)"
-	bench --site generic.localhost compile-po-to-mo --locale "$locale" --force
+	bench --site generic.localhost compile-po-to-mo --locale "$locale"
+done
+# Translations are cached in Redis per language. Clear it, or a desk that cached the missing
+# translations keeps showing English.
+for site in generic.localhost marone.localhost; do
+	bench --site "$site" clear-cache
 done
 
 # No default site: with one set, `bench serve` answers every Host with that site.
