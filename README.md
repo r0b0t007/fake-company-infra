@@ -23,7 +23,7 @@ Requirements: Docker Desktop and Git Bash.
 1. Clone the four app repos into `MaroneERP/apps/`.
 2. Run `fake-company-infra/dev/up.sh`. The first run takes 15 to 20 minutes.
 3. Start the server: `docker compose -f fake-company-infra/dev/compose.yml exec frappe bash -lc "cd frappe-bench && bench start"`.
-4. Open `http://marone.localhost:8000` (all apps) or `http://generic.localhost:8000` (generic apps only). Log in as `Administrator` / `admin`.
+4. Open `http://marone.localhost:8000` (all apps, plus Frappe HRMS for expense claims) or `http://generic.localhost:8000` (generic apps only). Log in as `Administrator` / `admin`.
 
 `up.sh` is safe to run again. It skips each step that is already done.
 

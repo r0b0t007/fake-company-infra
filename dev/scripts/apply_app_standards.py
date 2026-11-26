@@ -13,15 +13,21 @@ GITHUB_OWNER = "r0b0t007"
 FRAPPE_BRANCH = "version-16"
 FRAPPE_RANGE = ">=16.60.0,<17.0.0"
 ERPNEXT_RANGE = ">=16.60.0,<17.0.0"
+HRMS_RANGE = ">=16.60.0,<17.0.0"
+# Public Frappe apps, fetched from GitHub at FRAPPE_BRANCH. Everything else in `requires` is ours.
+UPSTREAM_RANGES = {"erpnext": ERPNEXT_RANGE, "hrms": HRMS_RANGE}
 
-# required_apps per ADR 0001. Generic apps never list each other or the tenant app.
+# required_apps per ADR 0001. Generic apps never list each other or the tenant app, and never
+# hrms: only a tenant that uses expense claims (CHW-379) requires it. `test_requires` are installed
+# in CI only, so the tests of a feature that is active when another app is present can run.
 APPS = {
-	"morocco_localization": {"requires": ["erpnext"], "kind": "generic"},
+	"morocco_localization": {"requires": ["erpnext"], "test_requires": ["hrms"], "kind": "generic"},
 	"trade_import": {"requires": ["erpnext"], "kind": "generic"},
 	"fake_company_brand": {"requires": [], "kind": "generic"},
 	"marone_custom": {
 		"requires": [
 			"erpnext",
+			"hrms",
 			"morocco_localization",
 			"trade_import",
 			"fake_company_brand",
@@ -51,13 +57,15 @@ def set_frappe_dependencies(app: str, requires: list[str]) -> None:
 	text = pyproject.read_text(encoding="utf-8")
 	text = re.sub(r"\n\[tool\.bench\.frappe-dependencies\]\n(?:[^\[\n].*\n)*", "", text)
 	block = f'\n[tool.bench.frappe-dependencies]\nfrappe = "{FRAPPE_RANGE}"\n'
-	if "erpnext" in requires:
-		block += f'erpnext = "{ERPNEXT_RANGE}"\n'
+	for upstream, version_range in UPSTREAM_RANGES.items():
+		if upstream in requires:
+			block += f'{upstream} = "{version_range}"\n'
 	text = text.replace("\n[build-system]", block + "\n[build-system]", 1)
 	write(pyproject, text)
 
 
-def ci_workflow(app: str, requires: list[str]) -> str:
+def ci_workflow(app: str, requires: list[str], test_requires: list[str] | None = None) -> str:
+	test_requires = test_requires or []
 	private_deps = [a for a in requires if a in APPS]
 	checkout_deps = "".join(
 		f"""
@@ -70,8 +78,14 @@ def ci_workflow(app: str, requires: list[str]) -> str:
 """
 		for dep in private_deps
 	)
-	get_erpnext = (
-		f"          bench get-app --branch {FRAPPE_BRANCH} erpnext\n" if "erpnext" in requires else ""
+	# Server tests need no front-end build: --skip-assets saves minutes (the HRMS PWA and roster).
+	get_upstream = "".join(
+		f"          bench get-app --skip-assets --branch {FRAPPE_BRANCH} {upstream}\n"
+		for upstream in UPSTREAM_RANGES
+		if upstream in requires or upstream in test_requires
+	)
+	install_test_apps = "".join(
+		f"          bench --site test_site install-app {extra}\n" for extra in test_requires
 	)
 	get_deps = "".join(
 		f"          bench get-app {dep} $GITHUB_WORKSPACE/apps/{dep}\n" for dep in private_deps
@@ -142,10 +156,10 @@ jobs:
       - name: Install apps
         working-directory: /home/runner/frappe-bench
         run: |
-{get_erpnext}{get_deps}          bench get-app {app} $GITHUB_WORKSPACE/apps/{app}
+{get_upstream}{get_deps}          bench get-app {app} $GITHUB_WORKSPACE/apps/{app}
           bench setup requirements --dev
           bench new-site --db-root-password root --admin-password admin --mariadb-user-host-login-scope='%' test_site
-          bench --site test_site install-app {app}
+{install_test_apps}          bench --site test_site install-app {app}
         env:
           CI: 'Yes'
 
@@ -240,12 +254,20 @@ def main() -> None:
 		root = APPS_DIR / app
 		if not (root / "pyproject.toml").exists():
 			sys.exit(f"missing app: {root}")
+		if cfg["kind"] == "generic" and "hrms" in cfg["requires"]:
+			sys.exit(f"{app}: a generic app must not require hrms (ADR 0001); use test_requires")
 		set_required_apps(app, cfg["requires"])
 		set_frappe_dependencies(app, cfg["requires"])
-		write(root / ".github" / "workflows" / "ci.yml", ci_workflow(app, cfg["requires"]))
+		write(
+			root / ".github" / "workflows" / "ci.yml",
+			ci_workflow(app, cfg["requires"], cfg.get("test_requires")),
+		)
 		write(root / ".github" / "dependabot.yml", DEPENDABOT)
 		write(root / app / "tests" / "__init__.py", "")
-		write(root / app / "tests" / "test_install.py", smoke_test(app, cfg["requires"]))
+		# Only a starting point: an app adds its own tests to this file, so it is never overwritten.
+		test_install = root / app / "tests" / "test_install.py"
+		if not test_install.exists():
+			write(test_install, smoke_test(app, cfg["requires"]))
 		write(root / "CLAUDE.md", claude_md(app, cfg))
 		print(f"applied: {app}")
 
