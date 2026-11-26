@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Runs inside the frappe container. Safe to run again: each step skips what exists.
 #
-# 1. Create the bench (Frappe version-16) and get ERPNext version-16.
+# 1. Create the bench (Frappe version-16) and get ERPNext and HRMS version-16.
 # 2. Soft-link every app found in /workspace/apps into the bench.
-# 3. Create generic.localhost (generic apps only) and marone.localhost (all apps).
+# 3. Create generic.localhost (generic apps only) and marone.localhost (all apps, plus HRMS).
 # 4. Compile the French and Arabic translations (.po to .mo), so the desk shows them.
 set -euo pipefail
 
@@ -13,6 +13,8 @@ BENCH=$ROOT/frappe-bench
 APPS_SRC=/workspace/apps
 GENERIC_APPS=(morocco_localization trade_import fake_company_brand)
 TENANT_APP=marone_custom
+# Frappe HRMS gives the tenant expense claims (CHW-379). The generic apps never depend on it.
+TENANT_EXTRA_APPS=(hrms)
 
 # Docker Desktop DNS needs a few seconds after the container starts.
 for _ in $(seq 1 30); do
@@ -46,10 +48,21 @@ if [ -x /usr/bin/chromium-headless-shell ]; then
 	bench set-config -g chromium_path /usr/bin/chromium-headless-shell
 fi
 
-if [ ! -d apps/erpnext ]; then
-	echo ">> get-app erpnext ($BRANCH)"
-	bench get-app --branch "$BRANCH" erpnext
-fi
+# An app counts once it is in sites/apps.txt: bench get-app writes it there last, after the clone,
+# pip and yarn. A get-app that failed half-way leaves the folder without the entry; for these
+# upstream apps the folder is only a clone, so remove it and fetch again.
+registered() { grep -qx "$1" sites/apps.txt; }
+
+for app in erpnext "${TENANT_EXTRA_APPS[@]}"; do
+	if ! registered "$app"; then
+		if [ -d "apps/$app" ]; then
+			echo ">> remove apps/$app left by a failed get-app"
+			rm -rf "apps/$app"
+		fi
+		echo ">> get-app $app ($BRANCH)"
+		bench get-app --branch "$BRANCH" "$app"
+	fi
+done
 
 # Soft-link each custom app that exists on the host.
 for app in "${GENERIC_APPS[@]}" "$TENANT_APP"; do
@@ -59,7 +72,7 @@ for app in "${GENERIC_APPS[@]}" "$TENANT_APP"; do
 	fi
 done
 
-installed() { [ -d "apps/$1" ]; }
+installed() { registered "$1"; }
 
 new_site() {
 	local site=$1
@@ -85,7 +98,7 @@ new_site() {
 
 # generic.localhost proves the generic apps install without the tenant app (ADR 0001).
 new_site generic.localhost erpnext "${GENERIC_APPS[@]}"
-new_site marone.localhost erpnext "${GENERIC_APPS[@]}" "$TENANT_APP"
+new_site marone.localhost erpnext "${TENANT_EXTRA_APPS[@]}" "${GENERIC_APPS[@]}" "$TENANT_APP"
 
 # Frappe reads compiled .mo files, not the .po sources. Without them, a site set to French or
 # Arabic still shows English. The files go to sites/assets/locale and are shared by every site,
