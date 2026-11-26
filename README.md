@@ -13,9 +13,9 @@ The workspace layout is:
 
 ```
 MaroneERP/
-  apps/             morocco_localization, trade_import, fake_company_brand, marone_custom (one git repo each)
+  apps/                morocco_localization, trade_import, fake_company_brand, marone_custom (one git repo each)
   fake-company-infra/  this repo
-  erpnext/          upstream ERPNext version-16, read-only reference
+  erpnext/             upstream ERPNext version-16, read-only reference
 ```
 
 Requirements: Docker Desktop and Git Bash.
@@ -28,6 +28,15 @@ Requirements: Docker Desktop and Git Bash.
 `up.sh` is safe to run again. It skips each step that is already done.
 
 The bench lives in the Docker volume `fake-company-dev_bench`. The apps stay on the host in `MaroneERP/apps/` and are soft-linked into the bench, so you edit them with your normal tools.
+
+### Moving from the old `bangicode-dev` stack
+
+The Docker Compose project was renamed from `bangicode-dev` to `fake-company-dev`. A machine set up before the rename still has the old containers and volumes, and `up.sh` does not reuse them:
+
+1. Stop the old containers, so they free ports 8000 and 9000: `docker stop bangicode-dev-frappe-1 bangicode-dev-mariadb-1 bangicode-dev-redis-cache-1 bangicode-dev-redis-queue-1`.
+2. Run `dev/up.sh`. It builds a new bench in `fake-company-dev_bench` and creates both sites again (15 to 20 minutes). Nothing is copied from the old volumes.
+3. Do not point the new stack at the old volumes: their sites still list the brand app as `bangicode_brand`, and `bench migrate` fails on them.
+4. When you no longer need the old data, remove it: `docker rm bangicode-dev-frappe-1 bangicode-dev-mariadb-1 bangicode-dev-redis-cache-1 bangicode-dev-redis-queue-1`, then `docker volume rm bangicode-dev_bench bangicode-dev_mariadb-data`. This deletes the old sites for good.
 
 ## New app
 

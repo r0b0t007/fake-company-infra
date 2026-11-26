@@ -14,5 +14,5 @@ docker compose -f compose.yml up -d frappe
 docker compose -f compose.yml exec -T frappe bash /workspace/scripts/setup-bench.sh
 
 echo
-echo "Start the server:  docker compose -f $(pwd)/compose.yml exec frappe bench start"
+echo "Start the server:  docker compose -f \"$(pwd)/compose.yml\" exec frappe bash -lc \"cd frappe-bench && bench start\""
 echo "Then open:         http://marone.localhost:8000  and  http://generic.localhost:8000  (Administrator / admin)"
