@@ -1,6 +1,6 @@
-# bangicode-infra
+# fake-company-infra
 
-Infrastructure and architecture records for the Bangicode ERPNext apps (Linear project MaroneERP).
+Infrastructure and architecture records for the Fake Company ERPNext apps (Linear project MaroneERP).
 
 | Path | Content |
 | -- | -- |
@@ -13,21 +13,21 @@ The workspace layout is:
 
 ```
 MaroneERP/
-  apps/             morocco_localization, trade_import, bangicode_brand, marone_custom (one git repo each)
-  bangicode-infra/  this repo
+  apps/             morocco_localization, trade_import, fake_company_brand, marone_custom (one git repo each)
+  fake-company-infra/  this repo
   erpnext/          upstream ERPNext version-16, read-only reference
 ```
 
 Requirements: Docker Desktop and Git Bash.
 
 1. Clone the four app repos into `MaroneERP/apps/`.
-2. Run `bangicode-infra/dev/up.sh`. The first run takes 15 to 20 minutes.
-3. Start the server: `docker compose -f bangicode-infra/dev/compose.yml exec frappe bash -lc "cd frappe-bench && bench start"`.
+2. Run `fake-company-infra/dev/up.sh`. The first run takes 15 to 20 minutes.
+3. Start the server: `docker compose -f fake-company-infra/dev/compose.yml exec frappe bash -lc "cd frappe-bench && bench start"`.
 4. Open `http://marone.localhost:8000` (all apps) or `http://generic.localhost:8000` (generic apps only). Log in as `Administrator` / `admin`.
 
 `up.sh` is safe to run again. It skips each step that is already done.
 
-The bench lives in the Docker volume `bangicode-dev_bench`. The apps stay on the host in `MaroneERP/apps/` and are soft-linked into the bench, so you edit them with your normal tools.
+The bench lives in the Docker volume `fake-company-dev_bench`. The apps stay on the host in `MaroneERP/apps/` and are soft-linked into the bench, so you edit them with your normal tools.
 
 ## New app
 
@@ -40,4 +40,4 @@ python dev/scripts/apply_app_standards.py   # add the app to APPS in this script
 
 ## CI secret
 
-`marone_custom` CI checks out the three private generic apps. It needs a repository secret `APPS_READ_TOKEN`: a fine-grained GitHub token with read access to the contents of `morocco_localization`, `trade_import` and `bangicode_brand`.
+`marone_custom` CI checks out the three private generic apps. It needs a repository secret `APPS_READ_TOKEN`: a fine-grained GitHub token with read access to the contents of `morocco_localization`, `trade_import` and `fake_company_brand`.

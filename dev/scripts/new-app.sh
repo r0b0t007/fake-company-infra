@@ -8,7 +8,7 @@ set -euo pipefail
 APP=$1
 TITLE=$2
 DESCRIPTION=$3
-PUBLISHER="Bangicode SARL"
+PUBLISHER="Fake Company SARL"
 EMAIL="ahmedchioua@gmail.com"
 LICENSE="gpl-3.0"   # provisional, see CHW-82
 BENCH=/home/frappe/benches/frappe-bench
